@@ -3,6 +3,7 @@
 #include <vector>
 #include <span>
 #include <print>
+#include <cassert>
 
 template<typename T,typename Lambda>
 void cg_plain(size_t nrows,Lambda A, std::span<const T> b,size_t maxiter){
@@ -36,6 +37,9 @@ void cg_plain(size_t nrows,Lambda A, std::span<const T> b,size_t maxiter){
 
     if(it>0){
       beta =  rho_current/rho_last;
+      for(size_t i=0;i<p.size();i++){
+        p[i] = r[i] + beta*p[i];
+      }
     }
     A(p,q);
     T alpha = rho_current / dot(p,q);

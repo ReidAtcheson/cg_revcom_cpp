@@ -44,7 +44,7 @@ class sparse_t{
       for(I r = 0; r < nrows; r++){
         for(I nz = 0; nz < nnz_per_row; nz++){
           /*Make sure we don't get indices below 0 or above nrows.*/
-          I c = std::max(0,std::min(nrows - 1,I(d(rng) + r)));
+          I c = std::max(I(0),std::min(nrows - 1,I(d(rng) + r)));
           F val = v(rng);
           A[{r,c}] = val;
           A[{c,r}] = val;
