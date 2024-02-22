@@ -52,6 +52,30 @@ class sparse_t{
          * later to ensure positive definiteness.*/
         A[{r,r}] = 0.0;
       }
+
+
+      /*Now construct the compressed-sparse-row format.*/
+      I off = 0;
+      this->offs.push_back(off);
+      for(I r = 0;r < nrows; r++){
+        /*First determine the diagonal value.*/
+        F diag=eps;
+        for(auto it = A.lower_bound({r,0}); it != A.upper_bound({r,nrows-1}); it++){
+          diag += std::abs(it->second);
+        }
+        A[{r,r}] = diag;
+        /*Now add to CSR matrix.*/
+        for(auto it = A.lower_bound({r,0}); it != A.upper_bound({r,nrows-1}); it++){
+          off+=1;
+          this->vals.append(it->second);
+          this->cids.push_back(it->first->second);
+        }
+        this->offs.push_back(off);
+      }
+
+      this->nrows = nrows;
+      this->ncols = ncols;
+      return *this;
     }
 };
 
