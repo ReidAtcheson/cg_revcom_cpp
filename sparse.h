@@ -3,6 +3,7 @@
 #include <vector>
 #include <random>
 #include <map>
+#include <cassert>
 
 
 /**
@@ -43,7 +44,7 @@ class sparse_t{
       for(I r = 0; r < nrows; r++){
         for(I nz = 0; nz < nnz_per_row; nz++){
           /*Make sure we don't get indices below 0 or above nrows.*/
-          I c = std::max(0,std::min(nrows - 1,d(rng) + r));
+          I c = std::max(0,std::min(nrows - 1,I(d(rng) + r)));
           F val = v(rng);
           A[{r,c}] = val;
           A[{c,r}] = val;
@@ -67,15 +68,47 @@ class sparse_t{
         /*Now add to CSR matrix.*/
         for(auto it = A.lower_bound({r,0}); it != A.upper_bound({r,nrows-1}); it++){
           off+=1;
-          this->vals.append(it->second);
-          this->cids.push_back(it->first->second);
+          this->vals.push_back(it->second);
+          this->cids.push_back(it->first.second);
         }
         this->offs.push_back(off);
       }
 
       this->nrows = nrows;
-      this->ncols = ncols;
-      return *this;
+      this->ncols = nrows;
+
+      /*Some post-conditions.*/
+      /*Symmetric matrix. nrows==ncols.*/
+      assert(this->nrows == this->ncols);
+      /*Offsets array should be sorted.*/
+      assert(std::is_sorted(this->offs.begin(),this->offs.end()));
+      /*Column indices should be sorted for each row.*/
+      for(size_t i = 0;i < this->offs.size()-1; i++){
+        I beg = this->offs[i];
+        I end = this->offs[i+1];
+        assert(std::is_sorted(&this->cids[beg], &this->cids[end]));
+      }
+      /*Last offset value should equal total number of nonzeros.*/
+      assert(size_t(this->offs[this->offs.size()-1]) == this->vals.size());
+      /*Finally: check symmetry.*/
+      std::map<std::pair<I,I>,F> check_symmetry;
+      for(I r =0;r<nrows;r++){
+        I beg = this->offs[r];
+        I end = this->offs[r+1];
+        for(I coff = beg; coff < end; coff++){
+          I c = this->cids[coff];
+          /*Indices in CSR format should be unique and only occur once in a full scan
+           * of the datastructure.*/
+          assert( check_symmetry.find({r,c}) == check_symmetry.end() );
+          check_symmetry[{r,c}] = this->vals[coff];
+        }
+      }
+      for(auto& [rc,val] : check_symmetry){
+        auto [r,c] = rc;
+        F val0 = check_symmetry[{r,c}];
+        F val1 = check_symmetry[{c,r}];
+        assert(val0 == val1);
+      }
     }
 };
 

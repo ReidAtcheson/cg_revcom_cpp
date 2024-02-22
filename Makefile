@@ -6,7 +6,7 @@ CXXFLAGS=--std=c++23 --stdlib=libc++ -Wall -pedantic
 
 
 
-main : main.cpp
+main : main.cpp sparse.h cg.h
 	$(CXX) $(CXXFLAGS) main.cpp -o main
 
 
