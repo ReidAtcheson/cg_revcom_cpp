@@ -6,8 +6,8 @@
 #include <cassert>
 
 template<typename T,typename Lambda>
-void cg_plain(size_t nrows,Lambda A, std::span<const T> b,size_t maxiter){
-  bool verbose = true;
+std::vector<T> cg_plain(size_t nrows,Lambda A, std::span<const T> b,size_t maxiter){
+  bool verbose = false;
   auto dot = [](std::span<const T> x, std::span<const T> y) -> T{
     assert(x.size() == y.size());
     T out = 0.0;
@@ -50,6 +50,7 @@ void cg_plain(size_t nrows,Lambda A, std::span<const T> b,size_t maxiter){
     }
     rho_last = rho_current;
   }
+  return x;
 }
 
 
