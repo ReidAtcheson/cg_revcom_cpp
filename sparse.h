@@ -4,8 +4,6 @@
 #include <random>
 #include <map>
 #include <cassert>
-
-
 /**
  * 
  *
@@ -13,7 +11,6 @@
  * just for the purposes of testing the ideas in the repo.
  *
  */
-
 
 template<typename I,typename F>
 class sparse_t{
@@ -27,6 +24,9 @@ class sparse_t{
     sparse_t() = default;
     /*Randomly generate a sparse symmetric positive definite matrix.*/
     sparse_t(I nrows,I spread,I nnz_per_row,F eps,std::mt19937& rng){
+      assert(nrows>0);
+      assert(nnz_per_row>0);
+      assert(eps>0.0);
       /*Hold initially in an ordered map just to make things easy.*/
       std::map<std::pair<I,I>,F> A;
 
@@ -82,6 +82,8 @@ class sparse_t{
       assert(this->nrows == this->ncols);
       /*Offsets array should be sorted.*/
       assert(std::is_sorted(this->offs.begin(),this->offs.end()));
+      /*Offsets array should have nrows+1 offsets.*/
+      assert(this->offs.size() == size_t(this->nrows+1));
       /*Column indices should be sorted for each row.*/
       for(size_t i = 0;i < this->offs.size()-1; i++){
         I beg = this->offs[i];
@@ -108,6 +110,22 @@ class sparse_t{
         F val0 = check_symmetry[{r,c}];
         F val1 = check_symmetry[{c,r}];
         assert(val0 == val1);
+      }
+    }
+
+
+    void matvec(std::span<const F> in,std::span<F> out){
+      assert(in.size() == this->ncols);
+      assert(out.size() == this->nrows);
+      for(I r=0;r<this->nrows;r++){
+        I beg = this->offs[r];
+        I end = this->offs[r+1];
+        out[r]=0.0;
+        for(I coff = beg; coff < end; coff++){
+          I c = this->cids[coff];
+          F v = this->vals[coff];
+          out[r] += v * in[c];
+        }
       }
     }
 };
