@@ -5,6 +5,52 @@
 #include "cg.h"
 #include "power.h"
 #include "sparse.h"
+#include "timer.h"
+
+template<typename I,typename T>
+void plain_sequential(
+    int64_t nrows,
+    int64_t maxiter,
+    const sparse_t<I,T>& A,
+    const std::vector<T>& b){
+  std::vector<double> r(nrows,0.0);
+  {
+    scope_timer_t timer("plain sequential");
+    auto x = cg_plain(nrows,
+        [&A](std::span<const double> in, std::span<double> out){
+          A.matvec(in,out);
+        },std::span<const double>(b),maxiter);
+
+    auto [lambda,y] = power(nrows,[&A](std::span<const double> in, std::span<double> out){
+          A.matvec(in,out);
+        },
+        std::span<const double>(b),
+        maxiter);
+
+    /*primitive check that Ax=b.*/
+    A.matvec(x,r);
+    for(size_t i=0;i<nrows;i++){
+      assert(std::abs(r[i]-b[i])/std::abs(b[i]) < 1e-6);
+    }
+    /*
+     * Primitive check that Ay = lambda * y.
+     *
+     * Power iteration converges slowly so I use a really
+     * weak check here.
+     */
+    A.matvec(y,r);
+    for(size_t i=0;i<nrows;i++){
+      double relerr = std::abs(lambda*y[i]-r[i])/std::abs(lambda*y[i]);
+      if(std::abs(y[i])>1e-2 && relerr>1e-2){
+        std::print("{}  ,   {},    {}\n",lambda*y[i],r[i],relerr);
+      }
+      if(std::abs(y[i])>1e-2){
+        assert(relerr<1e-2);
+      }
+    }
+  }
+
+}
 
 
 int main(int argc,char** argv){
@@ -17,40 +63,7 @@ int main(int argc,char** argv){
 
   sparse_t<int64_t,double> A(nrows,spread,nnz_per_row,eps,rng);
   std::vector<double> b(nrows,1.0);
-  std::vector<double> r(nrows,0.0);
-
-  auto x = cg_plain(nrows,
-      [&A](std::span<const double> in, std::span<double> out){
-        A.matvec(in,out);
-      },std::span<const double>(b),maxiter);
-
-  auto [lambda,y] = power(nrows,[&A](std::span<const double> in, std::span<double> out){
-        A.matvec(in,out);
-      },
-      std::span<const double>(b),
-      maxiter);
-
-  /*primitive check that Ax=b.*/
-  A.matvec(x,r);
-  for(size_t i=0;i<nrows;i++){
-    assert(std::abs(r[i]-b[i])/std::abs(b[i]) < 1e-6);
-  }
-  /*
-   * Primitive check that Ay = lambda * y.
-   *
-   * Power iteration converges slowly so I use a really
-   * weak check here.
-   */
-  A.matvec(y,r);
-  for(size_t i=0;i<nrows;i++){
-    double relerr = std::abs(lambda*y[i]-r[i])/std::abs(lambda*y[i]);
-    if(std::abs(y[i])>1e-2 && relerr>1e-2){
-      std::print("{}  ,   {},    {}\n",lambda*y[i],r[i],relerr);
-    }
-    if(std::abs(y[i])>1e-2){
-      assert(relerr<1e-2);
-    }
-  }
+  plain_sequential(nrows,maxiter,A,b);
 
 
 

@@ -114,7 +114,7 @@ class sparse_t{
     }
 
 
-    void matvec(std::span<const F> in,std::span<F> out){
+    void matvec(std::span<const F> in,std::span<F> out) const{
       assert(in.size() == this->ncols);
       assert(out.size() == this->nrows);
       for(I r=0;r<this->nrows;r++){
