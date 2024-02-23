@@ -4,6 +4,7 @@
 #include <random>
 #include <map>
 #include <cassert>
+#include <thread>
 /**
  * 
  *
@@ -128,6 +129,78 @@ class sparse_t{
         }
       }
     }
+
+  void matvec_batch2(
+      std::span<const F> in0,
+      std::span<const F> in1,
+      std::span<F> out0,
+      std::span<F> out1
+      ) const{
+        assert(in0.size() == this->ncols);
+        assert(out0.size() == this->nrows);
+        assert(in1.size() == this->ncols);
+        assert(out1.size() == this->nrows);
+        for(I r=0;r<this->nrows;r++){
+          I beg = this->offs[r];
+          I end = this->offs[r+1];
+          out0[r]=0.0;
+          out1[r]=0.0;
+          for(I coff = beg; coff < end; coff++){
+            I c = this->cids[coff];
+            F v = this->vals[coff];
+            out0[r] += v * in0[c];
+            out1[r] += v * in1[c];
+          }
+        }
+      }
+
+  void matvec_batch2_multithreaded(
+      std::span<const F> in0,
+      std::span<const F> in1,
+      std::span<F> out0,
+      std::span<F> out1
+      ) const{
+        assert(in0.size() == this->ncols);
+        assert(out0.size() == this->nrows);
+        assert(in1.size() == this->ncols);
+        assert(out1.size() == this->nrows);
+        std::thread first_half([&](){
+          for(I r=0;r<this->nrows/2;r++){
+            I beg = this->offs[r];
+            I end = this->offs[r+1];
+            out0[r]=0.0;
+            out1[r]=0.0;
+            for(I coff = beg; coff < end; coff++){
+              I c = this->cids[coff];
+              F v = this->vals[coff];
+              out0[r] += v * in0[c];
+              out1[r] += v * in1[c];
+            }
+          }
+      });
+
+      std::thread second_half([&](){
+        for(I r=this->nrows/2;r<this->nrows;r++){
+          I beg = this->offs[r];
+          I end = this->offs[r+1];
+          out0[r]=0.0;
+          out1[r]=0.0;
+          for(I coff = beg; coff < end; coff++){
+            I c = this->cids[coff];
+            F v = this->vals[coff];
+            out0[r] += v * in0[c];
+            out1[r] += v * in1[c];
+          }
+        }
+    });
+
+    first_half.join();
+    second_half.join();
+
+  }
+
+
+
 };
 
 
