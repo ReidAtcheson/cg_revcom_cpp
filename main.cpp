@@ -361,7 +361,7 @@ void batched_multithreaded_revcomm(
     const std::vector<T>& b){
   std::vector<double> r(nrows,0.0);
   {
-    scope_timer_t timer("batched reverse communication");
+    scope_timer_t timer("batched multithreaded reverse communication");
 
     /**
      * The idea here is instead of simply sequentially iterating both coroutines
@@ -532,7 +532,7 @@ int main(int argc,char** argv){
   int64_t nrows=200000;
   int64_t spread=32;
   int64_t nnz_per_row=30;
-  int64_t maxiter = 50;
+  int64_t maxiter = 200;
   double eps = 1.0;
 
   sparse_t<int64_t,double> A(nrows,spread,nnz_per_row,eps,rng);
