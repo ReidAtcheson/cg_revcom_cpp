@@ -12,6 +12,20 @@ but libc++ is easier to download because they give binaries for common platforms
 in the [C++23 standard](https://en.cppreference.com/w/cpp/coroutine/generator) however 
 so I expect this code should eventually work as the libraries catch up to this.
 
+
+# Quick result:
+
+Just from a quick run, no commentary:
+
+
+| Method                                   | Time (milliseconds) |
+|------------------------------------------|---------------------|
+| Callback Sequential                      | 14628               |
+| Reverse Communication Sequential         | 16783               |
+| Batched Reverse Communication Sequential | 12404               |
+| Callback Multithreaded                   | 7830                |
+| Batched Reverse Communication Multithreaded | 6997             |
+
 # References
 
  * https://www.netlib.org/lapack/lawnspdf/lawn99.pdf
